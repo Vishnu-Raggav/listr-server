@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"os"
 
+	"github.com/joho/godotenv"
 	_ "modernc.org/sqlite"
 )
 
@@ -20,11 +21,18 @@ type Task struct {
 }
 
 func main() {
-	// create logger
+	// Create Logger
 	logger := log.New(os.Stdout, "INFO: ", 0)
 
-	// connect database
-	db, err := sql.Open("sqlite", "tasks.db")
+	// Load .Env
+	err := godotenv.Load()
+	if err != nil {
+		logger.SetPrefix("ERROR: ")
+		logger.Fatal(err)
+	}
+
+	// Connect Database
+	db, err := sql.Open("sqlite", os.Getenv("DB_URL"))
 	if err != nil {
 		logger.SetPrefix("ERROR: ")
 		logger.Fatal(err)
@@ -33,14 +41,15 @@ func main() {
 	app := application{db: db, log: logger}
 	app.initDB()
 
-	// create router
+	// HTTP Router
 	router := http.NewServeMux()
-	router.HandleFunc("GET /{$}", app.readDatabase)
-	router.HandleFunc("POST /{$}", app.insertDatabase)
+	router.HandleFunc("GET /{$}", app.readTasks)
+	router.HandleFunc("POST /{$}", app.insertTasks)
+	router.HandleFunc("DELETE /{taskId}", app.deleteTasks)
 
 	server := http.Server{
-		Addr:    ":8080",
-		Handler: router,
+		Addr:    os.Getenv("SERVER_ADDR"),
+		Handler: loggingMiddleware(router),
 	}
 	server.ListenAndServe()
 }
