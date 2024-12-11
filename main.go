@@ -10,11 +10,13 @@ import (
 	_ "modernc.org/sqlite"
 )
 
+// Application Struct
 type application struct {
 	db  *sql.DB
 	log *log.Logger
 }
 
+// Task Struct
 type Task struct {
 	Id   int    `json:"id"`
 	Name string `json:"name"`
@@ -49,7 +51,7 @@ func main() {
 
 	server := http.Server{
 		Addr:    os.Getenv("SERVER_ADDR"),
-		Handler: loggingMiddleware(router),
+		Handler: loggingMiddleware(corsMiddleware(router)),
 	}
 	server.ListenAndServe()
 }
